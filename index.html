@@ -1,0 +1,826 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Mi Tesoro</title>
+  
+  <!-- Configuración para Pantalla de Inicio / PWA -->
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="Mi Tesoro">
+  <meta name="theme-color" content="#2980b9">
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🏴‍☠️</text></svg>">
+
+  <style>
+    :root {
+      --sky-top: #4facfe;
+      --sky-bottom: #00f2fe;
+      --sand-gold: #f5cd79;
+      --sand-dark: #e1b12c;
+      --pirate-dark: #2c3e50;
+      --wood-chest: #8b4513;
+      --gold-coin: #ffd32a;
+      --income: #2ecc71;
+      --expense: #ff5252;
+      --card-bg: rgba(255, 255, 255, 0.94);
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      font-family: 'Comic Sans MS', 'Chalkboard SE', 'Arial Rounded MT Bold', sans-serif;
+    }
+
+    body {
+      background: linear-gradient(180deg, #3498db 0%, #74b9ff 45%, #f1c40f 90%, #d4ac0d 100%);
+      min-height: 100vh;
+      overflow-x: hidden;
+      position: relative;
+      padding-bottom: 50px;
+    }
+
+    /* ===== ESCENARIO DE FONDO ANIMADO ===== */
+    .bg-stage {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      pointer-events: none;
+      z-index: 0;
+      overflow: hidden;
+    }
+
+    .sun {
+      position: absolute;
+      top: 25px;
+      right: 35px;
+      width: 65px;
+      height: 65px;
+      background: radial-gradient(circle, #fff176, #fbc02d);
+      border-radius: 50%;
+      box-shadow: 0 0 35px #fff59d;
+      animation: pulseSun 4s infinite alternate ease-in-out;
+    }
+
+    @keyframes pulseSun {
+      0% { transform: scale(1); filter: drop-shadow(0 0 10px #fbc02d); }
+      100% { transform: scale(1.15); filter: drop-shadow(0 0 25px #fff176); }
+    }
+
+    .cloud {
+      position: absolute;
+      background: rgba(255, 255, 255, 0.85);
+      border-radius: 40px;
+      animation: drift linear infinite;
+    }
+    .cloud::before, .cloud::after {
+      content: '';
+      position: absolute;
+      background: inherit;
+      border-radius: 50%;
+    }
+    .cloud1 { top: 60px; left: -120px; width: 90px; height: 35px; animation-duration: 26s; }
+    .cloud1::before { width: 45px; height: 45px; top: -18px; left: 15px; }
+    .cloud2 { top: 120px; left: -160px; width: 130px; height: 42px; animation-duration: 38s; animation-delay: 8s; }
+    .cloud2::before { width: 55px; height: 55px; top: -22px; left: 25px; }
+
+    @keyframes drift {
+      from { transform: translateX(-150px); }
+      to { transform: translateX(calc(100vw + 200px)); }
+    }
+
+    /* Monedas de oro flotantes */
+    .floating-coin {
+      position: absolute;
+      font-size: 20px;
+      animation: floatDown linear infinite;
+      opacity: 0.85;
+    }
+    @keyframes floatDown {
+      0% { transform: translateY(-50px) rotate(0deg); opacity: 0; }
+      20% { opacity: 0.9; }
+      80% { opacity: 0.9; }
+      100% { transform: translateY(100vh) rotate(360deg); opacity: 0; }
+    }
+
+    /* Personajes en la orilla */
+    .shore-characters {
+      position: fixed;
+      bottom: 25px;
+      left: 0;
+      right: 0;
+      display: flex;
+      justify-content: space-between;
+      padding: 0 15px;
+      pointer-events: none;
+      z-index: 1;
+    }
+
+    .pirate-sprite {
+      font-size: 55px;
+      animation: pirateBounce 2.5s infinite ease-in-out;
+    }
+    .chest-sprite {
+      font-size: 52px;
+      animation: chestGlow 2s infinite alternate ease-in-out;
+    }
+
+    @keyframes pirateBounce {
+      0%, 100% { transform: translateY(0) rotate(0deg); }
+      50% { transform: translateY(-10px) rotate(4deg); }
+    }
+    @keyframes chestGlow {
+      0% { filter: drop-shadow(0 0 2px gold); }
+      100% { filter: drop-shadow(0 0 16px gold); transform: scale(1.06); }
+    }
+
+    /* ===== CONTENEDOR PRINCIPAL ===== */
+    .app-wrapper {
+      position: relative;
+      z-index: 2;
+      max-width: 480px;
+      margin: 15px auto;
+      padding: 0 12px;
+    }
+
+    .container {
+      background: var(--card-bg);
+      border-radius: 26px;
+      border: 4px solid #f9ca24;
+      box-shadow: 0 12px 30px rgba(0, 0, 0, 0.2);
+      padding: 20px;
+      backdrop-filter: blur(6px);
+    }
+
+    /* Barra Superior y Nombre */
+    .top-bar {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 12px;
+    }
+
+    .logo-badge {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 22px;
+      font-weight: 900;
+      color: #b7791f;
+      text-shadow: 1px 1px 0px #fef08a;
+    }
+
+    .lang-toggle {
+      display: flex;
+      background: #f1f2f6;
+      border-radius: 20px;
+      padding: 3px;
+      gap: 3px;
+    }
+    .lang-btn {
+      border: none;
+      background: none;
+      padding: 5px 10px;
+      font-size: 13px;
+      font-weight: bold;
+      cursor: pointer;
+      border-radius: 16px;
+      color: #576574;
+      transition: all 0.2s;
+    }
+    .lang-btn.active {
+      background: #f39c12;
+      color: white;
+    }
+
+    /* Tarjeta de Usuario */
+    .user-banner {
+      background: #fff8e7;
+      border: 2px dashed #f1c40f;
+      border-radius: 14px;
+      padding: 8px 12px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 15px;
+    }
+    .user-greeting {
+      font-size: 15px;
+      font-weight: bold;
+      color: #795548;
+    }
+    .btn-edit-user {
+      background: none;
+      border: none;
+      font-size: 14px;
+      cursor: pointer;
+      color: #3498db;
+      font-weight: bold;
+      text-decoration: underline;
+    }
+
+    /* Cofre del Tesoro / Balance */
+    .chest-card {
+      background: linear-gradient(135deg, #8e44ad, #2c3e50);
+      color: #fff;
+      border-radius: 22px;
+      padding: 20px;
+      text-align: center;
+      box-shadow: 0 8px 20px rgba(0,0,0,0.15);
+      margin-bottom: 18px;
+      border: 3px solid #f1c40f;
+    }
+    .chest-label {
+      font-size: 15px;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      color: #f6e58d;
+    }
+    .chest-coins {
+      font-size: 38px;
+      font-weight: 900;
+      margin: 8px 0;
+      color: #ffd32a;
+      text-shadow: 2px 2px 0px #000;
+    }
+
+    /* Pestañas */
+    .nav-tabs {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 6px;
+      margin-bottom: 18px;
+    }
+    .tab-btn {
+      padding: 10px 4px;
+      border-radius: 14px;
+      border: 2px solid transparent;
+      background: #f1f2f6;
+      font-size: 13px;
+      font-weight: bold;
+      cursor: pointer;
+      color: #2c3e50;
+      text-align: center;
+      transition: all 0.2s;
+    }
+    .tab-btn.active {
+      background: #fed330;
+      border-color: #f39c12;
+      transform: translateY(-2px);
+    }
+
+    .tab-pane {
+      display: none;
+    }
+    .tab-pane.active {
+      display: block;
+    }
+
+    /* Entradas y Botones */
+    .form-box {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      margin-bottom: 18px;
+    }
+    input, select {
+      width: 100%;
+      padding: 11px 13px;
+      border-radius: 12px;
+      border: 2px solid #dcdde1;
+      font-size: 14px;
+      outline: none;
+    }
+    input:focus { border-color: #f39c12; }
+
+    .btn-row {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 8px;
+    }
+    .btn-action {
+      border: none;
+      padding: 11px;
+      border-radius: 12px;
+      font-size: 14px;
+      font-weight: 900;
+      color: white;
+      cursor: pointer;
+      box-shadow: 0 4px 0 rgba(0,0,0,0.15);
+      transition: transform 0.1s;
+    }
+    .btn-action:active { transform: translateY(2px); box-shadow: none; }
+    .btn-gain { background: var(--income); }
+    .btn-loss { background: var(--expense); }
+
+    /* Listas de Registro */
+    .card-list {
+      list-style: none;
+      max-height: 200px;
+      overflow-y: auto;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+    .card-item {
+      background: #f8f9fa;
+      padding: 9px 12px;
+      border-radius: 12px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      border-left: 5px solid #ccc;
+    }
+    .card-item.gain { border-left-color: var(--income); }
+    .card-item.loss { border-left-color: var(--expense); }
+
+    /* Metas de Ahorro */
+    .goal-card {
+      background: #fff;
+      border: 2px solid #e1b12c;
+      border-radius: 16px;
+      padding: 12px;
+      margin-bottom: 10px;
+    }
+    .goal-header {
+      display: flex;
+      justify-content: space-between;
+      font-weight: bold;
+      margin-bottom: 6px;
+    }
+    .progress-bar-bg {
+      background: #ecf0f1;
+      border-radius: 10px;
+      height: 14px;
+      overflow: hidden;
+      margin: 6px 0;
+    }
+    .progress-bar-fill {
+      background: linear-gradient(90deg, #f1c40f, #2ecc71);
+      height: 100%;
+      width: 0%;
+      border-radius: 10px;
+      transition: width 0.4s ease;
+    }
+
+    /* Expediciones / Inversiones */
+    .invest-option {
+      background: #fdfbf7;
+      border: 2px dashed #3498db;
+      border-radius: 14px;
+      padding: 12px;
+      margin-bottom: 10px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    /* Footer */
+    .fhd-footer {
+      margin-top: 18px;
+      text-align: center;
+      font-size: 11px;
+      font-weight: 700;
+      color: #7f8c8d;
+      border-top: 1px dashed #dcdde1;
+      padding-top: 12px;
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Escenario de Fondo -->
+  <div class="bg-stage">
+    <div class="sun"></div>
+    <div class="cloud cloud1"></div>
+    <div class="cloud cloud2"></div>
+    
+    <!-- Monedas cayendo -->
+    <div class="floating-coin" style="left: 12%; animation-duration: 9s; animation-delay: 1s;">🪙</div>
+    <div class="floating-coin" style="left: 45%; animation-duration: 11s; animation-delay: 3s;">💰</div>
+    <div class="floating-coin" style="left: 80%; animation-duration: 8s; animation-delay: 2s;">🪙</div>
+  </div>
+
+  <!-- Personajes en la playa -->
+  <div class="shore-characters">
+    <div class="pirate-sprite">🏴‍☠️👦</div>
+    <div class="chest-sprite">👑💎</div>
+  </div>
+
+  <div class="app-wrapper">
+    <div class="container">
+      
+      <!-- Barra superior: Título y selector de idioma sin banderas -->
+      <div class="top-bar">
+        <div class="logo-badge">
+          <span>🦜</span>
+          <span id="title-text">Mi Tesoro</span>
+        </div>
+        <div class="lang-toggle">
+          <button class="lang-btn active" id="btn-es" onclick="setLanguage('es')">Español</button>
+          <button class="lang-btn" id="btn-en" onclick="setLanguage('en')">English</button>
+        </div>
+      </div>
+
+      <!-- Tarjeta de Usuario -->
+      <div class="user-banner">
+        <span class="user-greeting" id="user-greeting">¡Hola, Capitán!</span>
+        <button class="btn-edit-user" onclick="promptUserName()" id="btn-edit-user">Cambiar nombre</button>
+      </div>
+
+      <!-- Cofre / Saldo -->
+      <div class="chest-card">
+        <div class="chest-label" id="balance-label">Total en el Cofre</div>
+        <div class="chest-coins" id="total-coins">0 🪙</div>
+      </div>
+
+      <!-- Navegación de pestañas -->
+      <div class="nav-tabs">
+        <button class="tab-btn active" id="tab-moves-btn" onclick="openTab('moves')">🪙 Tesoro</button>
+        <button class="tab-btn" id="tab-goals-btn" onclick="openTab('goals')">🎯 Metas</button>
+        <button class="tab-btn" id="tab-invest-btn" onclick="openTab('invest')">⛵ Invertir</button>
+      </div>
+
+      <!-- PESTAÑA 1: MOVIMIENTOS -->
+      <div class="tab-pane active" id="pane-moves">
+        <div class="form-box">
+          <input type="text" id="tx-desc" placeholder="¿Cómo conseguiste o gastaste oro?">
+          <input type="number" id="tx-amount" placeholder="Cantidad de monedas (ej. 10)" min="1">
+          <input type="date" id="tx-date">
+          <div class="btn-row">
+            <button class="btn-action btn-gain" onclick="addCoins()" id="btn-add">+ Añadir Oro</button>
+            <button class="btn-action btn-loss" onclick="spendCoins()" id="btn-sub">- Gastar Oro</button>
+          </div>
+        </div>
+
+        <h4 style="margin-bottom: 8px; color: #2c3e50;" id="history-label">Diario de Aventuras</h4>
+        <ul class="card-list" id="tx-list"></ul>
+      </div>
+
+      <!-- PESTAÑA 2: METAS DE AHORRO -->
+      <div class="tab-pane" id="pane-goals">
+        <div class="form-box">
+          <input type="text" id="goal-name" placeholder="¿Qué quieres conseguir? (ej. Juguete)">
+          <input type="number" id="goal-target" placeholder="Monedas necesarias" min="1">
+          <button class="btn-action btn-gain" onclick="createGoal()" id="btn-create-goal">+ Crear Nueva Meta</button>
+        </div>
+
+        <div id="goals-list"></div>
+      </div>
+
+      <!-- PESTAÑA 3: INVERSIONES / EXPEDICIONES -->
+      <div class="tab-pane" id="pane-invest">
+        <p style="font-size: 13px; color: #576574; margin-bottom: 12px;" id="invest-desc">
+          ¡Envía tus monedas en barcos a buscar más tesoros!
+        </p>
+
+        <!-- Barco 1 -->
+        <div class="invest-option">
+          <div>
+            <strong>🛶 <span id="inv1-name">Canoa Costera</span></strong>
+            <p style="font-size: 12px; color: #27ae60;" id="inv1-desc">+5% extra al volver</p>
+          </div>
+          <button class="btn-action btn-gain" onclick="invest(0.05)" style="padding: 6px 12px; font-size: 12px;" id="btn-inv1">Enviar 10 🪙</button>
+        </div>
+
+        <!-- Barco 2 -->
+        <div class="invest-option">
+          <div>
+            <strong>⛵ <span id="inv2-name">Galeón Aventurero</span></strong>
+            <p style="font-size: 12px; color: #27ae60;" id="inv2-desc">+15% extra en mar profundo</p>
+          </div>
+          <button class="btn-action btn-gain" onclick="invest(0.15)" style="padding: 6px 12px; font-size: 12px;" id="btn-inv2">Enviar 30 🪙</button>
+        </div>
+      </div>
+
+      <!-- Pie de página solicitado -->
+      <footer class="fhd-footer">
+        Creado por FHD (financial health development) 2026
+      </footer>
+
+    </div>
+  </div>
+
+  <script>
+    // ===== TEXTOS BILINGÜES =====
+    const dictionary = {
+      es: {
+        title: "Mi Tesoro",
+        greeting: "¡Hola, Capitán {name}!",
+        btnEditUser: "Cambiar nombre",
+        promptName: "¿Cuál es tu nombre de pirata?",
+        balanceLabel: "Total en el Cofre",
+        tabMoves: "🪙 Tesoro",
+        tabGoals: "🎯 Metas",
+        tabInvest: "⛵ Invertir",
+        descPlace: "¿Cómo conseguiste o gastaste oro?",
+        amtPlace: "Cantidad de monedas (ej. 10)",
+        btnAdd: "+ Añadir Oro",
+        btnSub: "- Gastar Oro",
+        history: "Diario de Aventuras",
+        emptyHistory: "¡No hay registros en el diario de navegación!",
+        goalPlace: "¿Qué quieres conseguir? (ej. Juguete)",
+        goalTargetPlace: "Monedas necesarias",
+        btnCreateGoal: "+ Crear Nueva Meta",
+        btnDepositGoal: "+ Aportar 5 🪙",
+        goalDone: "¡Meta Cumplida! 🎉",
+        investDesc: "¡Envía tus monedas en expediciones marinas y hazlas crecer!",
+        inv1Name: "Canoa Costera",
+        inv1Desc: "+5% de recompensa",
+        btnInv1: "Enviar 10 🪙",
+        inv2Name: "Galeón Aventurero",
+        inv2Desc: "+15% de recompensa profunda",
+        btnInv2: "Enviar 30 🪙",
+        alertNoCoins: "¡No tienes suficientes monedas en el cofre!",
+        alertSuccessInvest: "¡El barco volvió con tu recompensa!"
+      },
+      en: {
+        title: "My Treasure",
+        greeting: "Welcome, Captain {name}!",
+        btnEditUser: "Change name",
+        promptName: "What is your pirate name?",
+        balanceLabel: "Total in Chest",
+        tabMoves: "🪙 Treasure",
+        tabGoals: "🎯 Goals",
+        tabInvest: "⛵ Invest",
+        descPlace: "How did you earn or spend gold?",
+        amtPlace: "Amount of coins (e.g. 10)",
+        btnAdd: "+ Add Gold",
+        btnSub: "- Spend Gold",
+        history: "Captain's Log",
+        emptyHistory: "No entries in your adventure log yet!",
+        goalPlace: "What is your savings goal? (e.g. Toy)",
+        goalTargetPlace: "Required coins",
+        btnCreateGoal: "+ Create New Goal",
+        btnDepositGoal: "+ Add 5 🪙",
+        goalDone: "Goal Achieved! 🎉",
+        investDesc: "Send your coins on sea expeditions to multiply your gold!",
+        inv1Name: "Coastal Canoe",
+        inv1Desc: "+5% safe reward",
+        btnInv1: "Send 10 🪙",
+        inv2Name: "Adventure Galleon",
+        inv2Desc: "+15% deep sea reward",
+        btnInv2: "Send 30 🪙",
+        alertNoCoins: "You do not have enough coins in the chest!",
+        alertSuccessInvest: "The ship returned with your rewarded treasure!"
+      }
+    };
+
+    let lang = 'es';
+    let userName = localStorage.getItem('pirate_username') || '';
+    let coins = parseFloat(localStorage.getItem('pirate_coins')) || 0;
+    let transactions = JSON.parse(localStorage.getItem('pirate_txs')) || [];
+    let goals = JSON.parse(localStorage.getItem('pirate_goals')) || [];
+
+    // Inicializar fecha de hoy en el calendario
+    document.getElementById('tx-date').value = new Date().toISOString().split('T')[0];
+
+    function saveState() {
+      localStorage.setItem('pirate_coins', coins);
+      localStorage.setItem('pirate_txs', JSON.stringify(transactions));
+      localStorage.setItem('pirate_goals', JSON.stringify(goals));
+      localStorage.setItem('pirate_username', userName);
+    }
+
+    // Manejo del Nombre de Usuario
+    function promptUserName() {
+      const d = dictionary[lang];
+      const newName = prompt(d.promptName, userName);
+      if (newName !== null && newName.trim() !== '') {
+        userName = newName.trim();
+        saveState();
+        updateGreeting();
+      }
+    }
+
+    function updateGreeting() {
+      const d = dictionary[lang];
+      const displayName = userName ? userName : (lang === 'es' ? 'Grumete' : 'Deckhand');
+      document.getElementById('user-greeting').textContent = d.greeting.replace('{name}', displayName);
+    }
+
+    // Cambio de Idioma
+    function setLanguage(selectedLang) {
+      lang = selectedLang;
+      document.getElementById('btn-es').classList.toggle('active', lang === 'es');
+      document.getElementById('btn-en').classList.toggle('active', lang === 'en');
+      
+      const d = dictionary[lang];
+      document.getElementById('title-text').textContent = d.title;
+      document.getElementById('btn-edit-user').textContent = d.btnEditUser;
+      document.getElementById('balance-label').textContent = d.balanceLabel;
+      document.getElementById('tab-moves-btn').textContent = d.tabMoves;
+      document.getElementById('tab-goals-btn').textContent = d.tabGoals;
+      document.getElementById('tab-invest-btn').textContent = d.tabInvest;
+      
+      document.getElementById('tx-desc').placeholder = d.descPlace;
+      document.getElementById('tx-amount').placeholder = d.amtPlace;
+      document.getElementById('btn-add').textContent = d.btnAdd;
+      document.getElementById('btn-sub').textContent = d.btnSub;
+      document.getElementById('history-label').textContent = d.history;
+
+      document.getElementById('goal-name').placeholder = d.goalPlace;
+      document.getElementById('goal-target').placeholder = d.goalTargetPlace;
+      document.getElementById('btn-create-goal').textContent = d.btnCreateGoal;
+
+      document.getElementById('invest-desc').textContent = d.investDesc;
+      document.getElementById('inv1-name').textContent = d.inv1Name;
+      document.getElementById('inv1-desc').textContent = d.inv1Desc;
+      document.getElementById('btn-inv1').textContent = d.btnInv1;
+      document.getElementById('inv2-name').textContent = d.inv2Name;
+      document.getElementById('inv2-desc').textContent = d.inv2Desc;
+      document.getElementById('btn-inv2').textContent = d.btnInv2;
+
+      updateGreeting();
+      renderAll();
+    }
+
+    // Navegación de pestañas
+    function openTab(tabId) {
+      document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
+      document.querySelectorAll('.tab-pane').forEach(pane => pane.classList.remove('active'));
+
+      document.getElementById(`tab-${tabId}-btn`).classList.add('active');
+      document.getElementById(`pane-${tabId}`).classList.add('active');
+    }
+
+    // Movimientos (Añadir / Gastar)
+    function addCoins() {
+      handleMovement('gain');
+    }
+
+    function spendCoins() {
+      handleMovement('loss');
+    }
+
+    function handleMovement(type) {
+      const descInput = document.getElementById('tx-desc');
+      const amtInput = document.getElementById('tx-amount');
+      const dateInput = document.getElementById('tx-date');
+
+      const desc = descInput.value.trim() || (type === 'gain' ? (lang === 'es' ? 'Tesoro hallado' : 'Treasure found') : (lang === 'es' ? 'Gasto pirata' : 'Pirate expense'));
+      const amount = parseFloat(amtInput.value);
+      const date = dateInput.value;
+
+      if (isNaN(amount) || amount <= 0 || !date) return;
+
+      if (type === 'gain') {
+        coins += amount;
+      } else {
+        if (coins < amount) {
+          alert(dictionary[lang].alertNoCoins);
+          return;
+        }
+        coins -= amount;
+      }
+
+      transactions.unshift({ desc, amount, date, type });
+      descInput.value = '';
+      amtInput.value = '';
+
+      saveState();
+      renderAll();
+    }
+
+    // Metas de Ahorro
+    function createGoal() {
+      const nameInput = document.getElementById('goal-name');
+      const targetInput = document.getElementById('goal-target');
+
+      const name = nameInput.value.trim();
+      const target = parseFloat(targetInput.value);
+
+      if (!name || isNaN(target) || target <= 0) return;
+
+      goals.push({ name, target, current: 0 });
+      nameInput.value = '';
+      targetInput.value = '';
+
+      saveState();
+      renderGoals();
+    }
+
+    function depositToGoal(index) {
+      const depositAmount = 5;
+      if (coins < depositAmount) {
+        alert(dictionary[lang].alertNoCoins);
+        return;
+      }
+
+      coins -= depositAmount;
+      goals[index].current += depositAmount;
+      if (goals[index].current > goals[index].target) {
+        goals[index].current = goals[index].target;
+      }
+
+      transactions.unshift({
+        desc: `${lang === 'es' ? 'Meta' : 'Goal'}: ${goals[index].name}`,
+        amount: depositAmount,
+        date: new Date().toISOString().split('T')[0],
+        type: 'loss'
+      });
+
+      saveState();
+      renderAll();
+    }
+
+    // Inversiones
+    function invest(rate) {
+      const cost = rate === 0.05 ? 10 : 30;
+      if (coins < cost) {
+        alert(dictionary[lang].alertNoCoins);
+        return;
+      }
+
+      const reward = Math.round(cost * (1 + rate));
+      coins = (coins - cost) + reward;
+
+      transactions.unshift({
+        desc: `${lang === 'es' ? 'Expedición' : 'Expedition'} (+${Math.round(rate * 100)}%)`,
+        amount: reward - cost,
+        date: new Date().toISOString().split('T')[0],
+        type: 'gain'
+      });
+
+      saveState();
+      renderAll();
+      alert(`${dictionary[lang].alertSuccessInvest} (+${reward - cost} 🪙)`);
+    }
+
+    // Renderizar Vistas
+    function renderAll() {
+      document.getElementById('total-coins').textContent = `${coins.toFixed(0)} 🪙`;
+      renderTransactions();
+      renderGoals();
+    }
+
+    function renderTransactions() {
+      const list = document.getElementById('tx-list');
+      list.innerHTML = '';
+
+      if (transactions.length === 0) {
+        list.innerHTML = `<li style="text-align:center; color:#95a5a6; font-size:13px; padding:10px;">${dictionary[lang].emptyHistory}</li>`;
+        return;
+      }
+
+      transactions.forEach(t => {
+        const item = document.createElement('li');
+        item.className = `card-item ${t.type}`;
+        const sign = t.type === 'gain' ? '+' : '-';
+        const color = t.type === 'gain' ? '#2ecc71' : '#ff5252';
+
+        item.innerHTML = `
+          <div>
+            <strong>${t.desc}</strong>
+            <div style="font-size:11px; color:#888;">📅 ${t.date}</div>
+          </div>
+          <span style="font-weight:bold; color:${color}; font-size:15px;">
+            ${sign}${t.amount} 🪙
+          </span>
+        `;
+        list.appendChild(item);
+      });
+    }
+
+    function renderGoals() {
+      const container = document.getElementById('goals-list');
+      container.innerHTML = '';
+
+      goals.forEach((g, idx) => {
+        const percent = Math.min(100, Math.round((g.current / g.target) * 100));
+        const isDone = g.current >= g.target;
+
+        const card = document.createElement('div');
+        card.className = 'goal-card';
+        card.innerHTML = `
+          <div class="goal-header">
+            <span>🎁 ${g.name}</span>
+            <span>${g.current} / ${g.target} 🪙</span>
+          </div>
+          <div class="progress-bar-bg">
+            <div class="progress-bar-fill" style="width: ${percent}%;"></div>
+          </div>
+          <div style="display:flex; justify-content:space-between; align-items:center; margin-top:6px;">
+            <span style="font-size:12px; font-weight:bold; color:#7f8c8d;">${percent}%</span>
+            ${isDone 
+              ? `<span style="font-weight:bold; color:#27ae60; font-size:13px;">${dictionary[lang].goalDone}</span>` 
+              : `<button class="btn-action btn-gain" style="padding:4px 10px; font-size:11px;" onclick="depositToGoal(${idx})">${dictionary[lang].btnDepositGoal}</button>`
+            }
+          </div>
+        `;
+        container.appendChild(card);
+      });
+    }
+
+    // Inicializar app
+    if (!userName) {
+      userName = 'Pirata';
+    }
+    updateGreeting();
+    renderAll();
+  </script>
+</body>
+</html>
